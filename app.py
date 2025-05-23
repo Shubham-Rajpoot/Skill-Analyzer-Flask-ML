@@ -1,14 +1,16 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-import en_core_web_sm  # Changed from spacy import to direct model import
+import spacy
 import nltk
-from nltk.corpus import stopwords
 import string
 
 app = Flask(__name__)
 CORS(app)
 
-nlp = en_core_web_sm.load()  # Load spaCy model directly from package
+# Load spaCy model (make sure 'python -m spacy download en_core_web_sm' runs in build)
+nlp = spacy.load('en_core_web_sm')
+
+# Download nltk stopwords (you can also do this once before deploy)
 nltk.download('stopwords')
 
 certifications_database = {
