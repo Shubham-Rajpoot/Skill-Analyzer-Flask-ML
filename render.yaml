@@ -2,9 +2,9 @@ services:
   - type: web
     name: resume-analyzer-api
     env: python
+    plan: free
     buildCommand: |
-    pip install -r requirements.txt
-    python -m spacy download en_core_web_sm
-    python nltk_setup.py
-startCommand: python app.py
-plan: free
+      pip install -r requirements.txt
+      python -m spacy download en_core_web_sm
+      python nltk_setup.py
+    startCommand: python app.py
