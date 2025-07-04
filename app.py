@@ -3,22 +3,29 @@ from flask_cors import CORS
 import spacy
 import nltk
 import string
+import os
 
 app = Flask(__name__)
 CORS(app)
 
-# Load spaCy model (make sure 'python -m spacy download en_core_web_sm' runs in build)
-nlp = spacy.load('en_core_web_sm')
+# ✅ Dynamically load spaCy model (handles first-time deploys)
+try:
+    nlp = spacy.load('en_core_web_sm')
+except:
+    os.system("python -m spacy download en_core_web_sm")
+    nlp = spacy.load('en_core_web_sm')
 
-# Download nltk stopwords (you can also do this once before deploy)
+# ✅ Download NLTK stopwords safely (idempotent)
 nltk.download('stopwords')
 
+# Sample certification recommendations per skill
 certifications_database = {
     "Python": ["Python for Everybody", "Google IT Automation with Python"],
     "SQL": ["SQL for Data Science", "Database Management Certification"],
     "JavaScript": ["JavaScript Algorithms and Data Structures", "Frontend Developer Certification"],
 }
 
+# Skill keywords database
 skills_database = [
     "python", "sql", "javascript", "node.js", "react", "react native", "html", "css", "mongodb", "express.js",
     "pandas", "numpy", "matplotlib", "tensorflow", "pytorch", "scikit-learn", "opencv",
@@ -29,25 +36,11 @@ skills_database = [
 def extract_skills(resume_text):
     resume_text = resume_text.lower()
     resume_text = resume_text.translate(str.maketrans('', '', string.punctuation))
-    
     extracted = [skill for skill in skills_database if skill in resume_text]
-    
-    print(f"Extracted Skills: {extracted}")
-    
     return list(set(extracted))
 
 def find_skill_gaps(extracted_skills, target_skills):
-    extracted_skills_lower = [skill.lower() for skill in extracted_skills]
-    target_skills_lower = [skill.lower() for skill in target_skills]
-    
-    print(f"Target Skills: {target_skills_lower}") 
-    print(f"Extracted Skills: {extracted_skills_lower}")  
-    
-    missing = [skill for skill in target_skills_lower if skill not in extracted_skills_lower]
-    
-    print(f"Missing Skills: {missing}") 
-    
-    return missing
+    return [skill for skill in target_skills if skill.lower() not in map(str.lower, extracted_skills)]
 
 def recommend_certifications(missing_skills):
     return {skill: certifications_database.get(skill, []) for skill in missing_skills}
@@ -62,6 +55,7 @@ def analyze_resume():
     resume_text = data.get('resumeText', '')
     target_role = data.get('targetRole', '')
 
+    # Target skills mapped by role
     role_skills = {
         "Full Stack Developer": ["javascript", "react", "node.js", "mongodb", "html", "css"],
         "Data Analyst": ["python", "sql", "pandas", "numpy", "matplotlib"],
@@ -75,11 +69,7 @@ def analyze_resume():
 
     target_skills = role_skills.get(target_role, [])
     extracted_skills = extract_skills(resume_text)
-    print(f"Extracted Skills: {extracted_skills}")  
-    
     missing_skills = find_skill_gaps(extracted_skills, target_skills)
-    print(f"Missing Skills: {missing_skills}") 
-    
     recommended_certifications = recommend_certifications(missing_skills)
 
     result = {
@@ -87,10 +77,9 @@ def analyze_resume():
         "missingSkills": missing_skills,
         "recommendedCertifications": recommended_certifications
     }
-    
+
     return jsonify(result)
 
 if __name__ == '__main__':
-    import os
     port = int(os.environ.get("PORT", 5001))
     app.run(host='0.0.0.0', port=port)
