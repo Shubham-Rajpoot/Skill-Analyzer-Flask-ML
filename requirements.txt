@@ -3,5 +3,5 @@ flask-cors
 spacy
 scikit-learn
 nltk
-
+gunicorn
 
